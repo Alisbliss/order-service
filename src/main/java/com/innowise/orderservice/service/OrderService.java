@@ -18,4 +18,6 @@ public interface OrderService {
     List<OrderResponse> getByUserId(Long userId);
     OrderResponse update(Long id, OrderUpdateRequest request);
     void delete(Long id);
+    boolean isCurrentUser(String userEmail, Long userId);
+    boolean isOrderOwner(Long orderId, Long userId);
 }

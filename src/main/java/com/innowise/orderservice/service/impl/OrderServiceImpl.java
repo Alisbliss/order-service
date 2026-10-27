@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
-@Service
+@Service("orderService")
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
@@ -103,6 +103,27 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(id).orElseThrow(()
                         -> new ResourceNotFoundException("Order not found: " + id));
         orderRepository.delete(order);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isCurrentUser(String userEmail, Long userId) {
+        if (userEmail == null || userId == null) return false;
+        try {
+            UserInfoResponse user = userServiceClient.getByEmail(userEmail);
+            return user.getId().equals(userId);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isOrderOwner(Long orderId, Long userId) {
+        if (orderId == null || userId == null) return false;
+        return orderRepository.findById(orderId)
+                .map(order -> order.getUserId().equals(userId))
+                .orElse(false);
     }
 
     private BigDecimal recalculateTotal(Order order) {
