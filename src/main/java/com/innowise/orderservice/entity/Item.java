@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Item extends BaseEntity {
     @Column(nullable = false)
     private String name;

@@ -106,27 +106,25 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean isCurrentUser(String userEmail, Long userId) {
         if (userEmail == null || userId == null) return false;
-        try {
-            UserInfoResponse user = userServiceClient.getByEmail(userEmail);
-            return user.getId().equals(userId);
-        } catch (Exception e) {
-            return false;
-        }
+        UserInfoResponse user = userServiceClient.getByEmail(userEmail);
+        return user.getId().equals(userId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean isOrderOwner(Long orderId, Long userId) {
         if (orderId == null || userId == null) return false;
-        return orderRepository.findById(orderId)
-                .map(order -> order.getUserId().equals(userId))
-                .orElse(false);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));  // ← 404
+        return order.getUserId().equals(userId);
     }
 
     private BigDecimal recalculateTotal(Order order) {
+        if (order.getItems() == null || order.getItems().isEmpty()) {
+            throw new BusinessException("Order must contain at least one item");
+        }
         BigDecimal total = BigDecimal.ZERO;
         for (OrderItem orderItem : order.getItems()) {
             if (orderItem.getItem() == null || orderItem.getItem().getId() == null) {
