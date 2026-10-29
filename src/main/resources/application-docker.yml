@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/orderdb
+    username: postgres
+    password: postgres
+
+user-service:
+  url: http://host.docker.internal:8080
