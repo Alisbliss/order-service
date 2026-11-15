@@ -19,7 +19,6 @@ services:
 
   app:
     build: .
-    container_name: order-service-app
     depends_on:
       postgres:
         condition: service_healthy

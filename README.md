@@ -9,7 +9,7 @@ Microservice for managing orders and order items.
 - MapStruct, Lombok
 - Spring Data JPA (Specifications, JPA Auditing)
 - OpenFeign, Resilience4j (CircuitBreaker)
-- Spring Security, JWT
+- Spring Security (OAuth2 Resource Server, RS256 + JWKS)
 - JUnit 5, Mockito, Testcontainers, WireMock
 - Docker, GitHub Actions
 

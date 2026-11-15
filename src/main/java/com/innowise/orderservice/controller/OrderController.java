@@ -14,7 +14,15 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -27,13 +35,13 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or @orderService.isCurrentUser(#request.userEmail, authentication.principal)")
+    @PreAuthorize("hasRole('ADMIN') or @orderService.isCurrentUser(#request.userEmail, authentication.principal.claims['user_id'])")
     public ResponseEntity<OrderResponse> create(@Valid @RequestBody OrderCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.create(request));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @orderService.isOrderOwner(#id, authentication.principal)")
+    @PreAuthorize("hasRole('ADMIN') or @orderService.isOrderOwner(#id, authentication.principal.claims['user_id'])")
     public ResponseEntity<OrderResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getById(id));
     }
@@ -51,13 +59,13 @@ public class OrderController {
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.claims['user_id']")
     public ResponseEntity<List<OrderResponse>> getByUserId(@PathVariable Long userId) {
         return ResponseEntity.ok(orderService.getByUserId(userId));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @orderService.isOrderOwner(#id, authentication.principal)")
+    @PreAuthorize("hasRole('ADMIN') or @orderService.isOrderOwner(#id, authentication.principal.claims['user_id'])")
     public ResponseEntity<OrderResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody OrderUpdateRequest request) {
@@ -65,7 +73,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @orderService.isOrderOwner(#id, authentication.principal)")
+    @PreAuthorize("hasRole('ADMIN') or @orderService.isOrderOwner(#id, authentication.principal.claims['user_id'])")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         orderService.delete(id);
         return ResponseEntity.noContent().build();

@@ -1,7 +1,11 @@
 package com.innowise.orderservice.service;
 
 import com.innowise.orderservice.client.UserServiceClient;
-import com.innowise.orderservice.dto.*;
+import com.innowise.orderservice.dto.OrderCreateRequest;
+import com.innowise.orderservice.dto.OrderItemCreateRequest;
+import com.innowise.orderservice.dto.OrderResponse;
+import com.innowise.orderservice.dto.OrderUpdateRequest;
+import com.innowise.orderservice.dto.UserInfoResponse;
 import com.innowise.orderservice.entity.Item;
 import com.innowise.orderservice.entity.Order;
 import com.innowise.orderservice.entity.OrderItem;
@@ -34,8 +38,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceImplTest {

@@ -2,42 +2,52 @@ package com.innowise.orderservice;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
-
 import com.innowise.orderservice.dto.OrderCreateRequest;
 import com.innowise.orderservice.dto.OrderItemCreateRequest;
 import com.innowise.orderservice.entity.Item;
 import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.ObjectMapper;
 
-import javax.crypto.SecretKey;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.moreThanOrExactly;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
 public class OrderFlowIntegrationTest {
     static WireMockServer wireMock;
+
+    @MockitoBean
+    private JwtDecoder jwtDecoder;
 
     @Container
     static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
@@ -49,7 +59,6 @@ public class OrderFlowIntegrationTest {
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.cache.type", () -> "none");
         registry.add("user-service.url", () -> "http://localhost:" + wireMock.port());
-        registry.add("jwt.secret", () -> "my-super-secret-key-that-is-at-least-256-bits-long-12345");
     }
 
     @BeforeAll
@@ -86,7 +95,18 @@ public class OrderFlowIntegrationTest {
                 .name("Mouse").price(new BigDecimal("20.02")).build());
         this.itemId = item.getId();
 
-        this.userToken = generateToken(5L, "USER");
+        when(jwtDecoder.decode(anyString())).thenAnswer(invocation -> {
+            String token = invocation.getArgument(0);
+            String[] parts = token.split("-");
+            Long userId = Long.parseLong(parts[1]);
+            String role = parts[2];
+            return Jwt.withTokenValue(token)
+                    .header("alg", "RS256")
+                    .claim("user_id", userId)
+                    .claim("role", role)
+                    .build();
+        });
+        this.userToken = "token-5-USER";
 
         //200
         WireMock.stubFor(WireMock.get(WireMock.urlPathMatching("/api/users/email/.*"))
@@ -100,17 +120,7 @@ public class OrderFlowIntegrationTest {
     }
 
     private String generateToken(Long userId, String role) {
-        SecretKey key = Keys.hmacShaKeyFor(
-                "my-super-secret-key-that-is-at-least-256-bits-long-12345"
-                        .getBytes(StandardCharsets.UTF_8));
-        return Jwts.builder()
-                .subject("user@example.com")
-                .claim("userId", userId)
-                .claim("role", role)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 900000))
-                .signWith(key)
-                .compact();
+        return "token-" + userId + "-" + role;
     }
 
     private OrderCreateRequest createRequest() {

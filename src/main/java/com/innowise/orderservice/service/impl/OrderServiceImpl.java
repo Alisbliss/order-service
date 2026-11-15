@@ -1,12 +1,17 @@
 package com.innowise.orderservice.service.impl;
 
 import com.innowise.orderservice.client.UserServiceClient;
-import com.innowise.orderservice.dto.*;
+import com.innowise.orderservice.dto.OrderCreateRequest;
+import com.innowise.orderservice.dto.OrderItemCreateRequest;
+import com.innowise.orderservice.dto.OrderResponse;
+import com.innowise.orderservice.dto.OrderUpdateRequest;
+import com.innowise.orderservice.dto.UserInfoResponse;
 import com.innowise.orderservice.entity.Item;
 import com.innowise.orderservice.entity.Order;
 import com.innowise.orderservice.entity.OrderItem;
 import com.innowise.orderservice.entity.OrderStatus;
 import com.innowise.orderservice.exception.BusinessException;
+import com.innowise.orderservice.exception.ItemNotFoundException;
 import com.innowise.orderservice.exception.ResourceNotFoundException;
 import com.innowise.orderservice.mapper.OrderItemMapper;
 import com.innowise.orderservice.mapper.OrderMapper;
@@ -117,7 +122,7 @@ public class OrderServiceImpl implements OrderService {
     public boolean isOrderOwner(Long orderId, Long userId) {
         if (orderId == null || userId == null) return false;
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));  // ← 404
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
         return order.getUserId().equals(userId);
     }
 
@@ -134,7 +139,7 @@ public class OrderServiceImpl implements OrderService {
                 throw new BusinessException("Quantity must be positive");
             }
             Item item = itemRepository.findById(orderItem.getItem().getId()).orElseThrow(()
-                    -> new ResourceNotFoundException("Item not found: " + orderItem.getItem().getId()));
+                    -> new ItemNotFoundException("Item not found: " + orderItem.getItem().getId()));
             orderItem.setItem(item);
             orderItem.setOrder(order);
             total = total.add(item.getPrice().multiply(BigDecimal.valueOf(orderItem.getQuantity())));
